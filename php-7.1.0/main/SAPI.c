@@ -482,8 +482,7 @@ SAPI_API void sapi_activate(void)
 		SG(request_info).cookie_data = sapi_module.read_cookies();
 	}
 	if (sapi_module.activate) {
-		//在php_module_startup模块初始化的时候，sapi_module 还没有定义，这段代码还不会执行
-		sapi_module.activate();
+		sapi_module.activate();//调用sapi_module对应的activate函数 cli对应的是null
 	}
 	if (sapi_module.input_filter_init) {
 		sapi_module.input_filter_init();

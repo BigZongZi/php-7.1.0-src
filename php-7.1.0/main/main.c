@@ -2277,6 +2277,7 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	}
 
 	/* disable certain classes and functions as requested by php.ini */
+	/*禁用php.ini中配置要禁用的函数和类*/
 	php_disable_functions();
 	php_disable_classes();
 
@@ -2285,7 +2286,7 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 		module->version = PHP_VERSION;
 		module->info_func = PHP_MINFO(php_core);
 	}
-
+	/*注册附件的函数*/
 	zend_post_startup();
 
 	module_initialized = 1;
@@ -2359,6 +2360,7 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	zend_interned_strings_snapshot();
  	virtual_cwd_activate();
 
+	/*模块初始化阶段做的事情比较多，对于FPM模式，进程启动后只会进行一次模块初始化，进而进入循环，进行请求的初始化。同样对于CLI模式，模块初始化完成后，也是进入请求初始化阶段*/
 	/* we're done */
 	return retval;
 }

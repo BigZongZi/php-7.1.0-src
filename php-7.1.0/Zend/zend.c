@@ -659,7 +659,7 @@ int zend_startup(zend_utility_functions *utility_functions, char **extensions) /
 	extern zend_php_scanner_globals language_scanner_globals;
 #endif
 
-	start_memory_manager();
+	start_memory_manager(); //初始化内存管理
 
 	virtual_cwd_startup(); /* Could use shutdown to free the main cwd but it would just slow it down for CGI */
 
@@ -669,7 +669,7 @@ int zend_startup(zend_utility_functions *utility_functions, char **extensions) /
 #endif
 
 	zend_startup_strtod();
-	zend_startup_extensions_mechanism();
+	zend_startup_extensions_mechanism();/*启动扩展机制*/
 
 	/* Set up utility functions and values */
 	zend_error_cb = utility_functions->error_function;
@@ -717,6 +717,7 @@ int zend_startup(zend_utility_functions *utility_functions, char **extensions) /
 	/* Set up the default garbage collection implementation. */
 	gc_collect_cycles = zend_gc_collect_cycles;
 
+	//初始化Zend虚拟机的handler，把静态的opcode放到内存中
 	zend_init_opcodes_handlers();
 
 	/* set up version */
@@ -767,16 +768,16 @@ int zend_startup(zend_utility_functions *utility_functions, char **extensions) /
 
 	zend_interned_strings_init();
 	zend_startup_builtin_functions();
-	zend_register_standard_constants();
-	zend_register_auto_global(zend_string_init("GLOBALS", sizeof("GLOBALS") - 1, 1), 1, php_auto_globals_create_globals);
+	zend_register_standard_constants();/*注册常量*/
+	zend_register_auto_global(zend_string_init("GLOBALS", sizeof("GLOBALS") - 1, 1), 1, php_auto_globals_create_globals);/*将GLOBALS添加到CG(auto_global)变量表中*/
 
 #ifndef ZTS
-	zend_init_rsrc_plist();
+	zend_init_rsrc_plist();/*初始化符号表*/
 	zend_init_exception_op();
 	zend_init_call_trampoline_op();
 #endif
 
-	zend_ini_startup();
+	zend_ini_startup();/*初始化与配置文件php.ini解析相关的变量*/
 
 #ifdef ZEND_WIN32
 	/* Uses INI settings, so needs to be run after it. */

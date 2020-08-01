@@ -1965,7 +1965,7 @@ ZEND_API void zend_collect_module_handlers(void) /* {{{ */
 
 ZEND_API int zend_startup_modules(void) /* {{{ */
 {
-	zend_hash_sort_ex(&module_registry, zend_sort_modules, NULL, 0);//todo 看一下这里是如何进行模块排序的
+	zend_hash_sort_ex(&module_registry, zend_sort_modules, NULL, 0);
 	zend_hash_apply(&module_registry, zend_startup_module_zval);
 	return SUCCESS;
 }
