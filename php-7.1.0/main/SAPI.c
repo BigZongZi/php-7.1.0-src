@@ -458,6 +458,7 @@ SAPI_API void sapi_activate(void)
 	SG(post_read) = 0;
 	/* It's possible to override this general case in the activate() callback, if necessary. */
 	if (SG(request_info).request_method && !strcmp(SG(request_info).request_method, "HEAD")) {
+		//request_method 等于 HEAD 类似于get，只不过返回的响应中没有具体的内容，用于获取报头
 		SG(request_info).headers_only = 1;
 	} else {
 		SG(request_info).headers_only = 0;
@@ -481,6 +482,7 @@ SAPI_API void sapi_activate(void)
 		SG(request_info).cookie_data = sapi_module.read_cookies();
 	}
 	if (sapi_module.activate) {
+		//在php_module_startup模块初始化的时候，sapi_module 还没有定义，这段代码还不会执行
 		sapi_module.activate();
 	}
 	if (sapi_module.input_filter_init) {

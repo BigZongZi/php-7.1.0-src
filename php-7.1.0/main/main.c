@@ -2086,7 +2086,7 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	module_shutdown = 0;
 	module_startup = 1;
 	sapi_initialize_empty_request();//对sapi_globals中的成员变量做初始化
-	sapi_activate();				//调用sapi_module里面的activate方法  	  todo
+	sapi_activate();				//调用sapi_module里面的activate方法  	
 
 	if (module_initialized) {
 		return SUCCESS;
@@ -2094,18 +2094,18 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 
 	sapi_module = *sf;
 
-	php_output_startup();			//初始化output相关的变量todo
+	php_output_startup();			//初始化output相关的变量
 
 #ifdef ZTS
 	ts_allocate_id(&core_globals_id, sizeof(php_core_globals), (ts_allocate_ctor) core_globals_ctor, (ts_allocate_dtor) core_globals_dtor);
-	php_startup_ticks();
+	php_startup_ticks();			//对tick_functions进行初始化
 #ifdef PHP_WIN32
 	ts_allocate_id(&php_win32_core_globals_id, sizeof(php_win32_core_globals), (ts_allocate_ctor) php_win32_core_globals_ctor, (ts_allocate_dtor) php_win32_core_globals_dtor);
 #endif
 #else
 	php_startup_ticks();
 #endif
-	gc_globals_ctor();
+	gc_globals_ctor();				//对gc_globals进行初始化
 
 	zuf.error_function = php_error_cb;
 	zuf.printf_function = php_printf;
@@ -2120,7 +2120,7 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	zuf.vstrpprintf_function = vstrpprintf;
 	zuf.getenv_function = sapi_getenv;
 	zuf.resolve_path_function = php_resolve_path_for_zend;
-	zend_startup(&zuf, NULL);
+	zend_startup(&zuf, NULL);		//初始化内存管理，初始化cwd_globals,启动扩展机制，设置一些工具函数，设置词法和语法函数，初始化Zend虚拟机的handler，以及对全局变量初始化等
 
 #if HAVE_SETLOCALE
 	setlocale(LC_CTYPE, "");
@@ -2139,7 +2139,7 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	}
 #endif
 
-	le_index_ptr = zend_register_list_destructors_ex(NULL, NULL, "index pointer", 0);
+	le_index_ptr = zend_register_list_destructors_ex(NULL, NULL, "index pointer", 0);//注册析构函数
 
 	/* Register constants */
 	REGISTER_MAIN_STRINGL_CONSTANT("PHP_VERSION", PHP_VERSION, sizeof(PHP_VERSION)-1, CONST_PERSISTENT | CONST_CS);
@@ -2193,19 +2193,20 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	REGISTER_MAIN_LONG_CONSTANT("PHP_WINDOWS_NT_WORKSTATION", VER_NT_WORKSTATION, CONST_PERSISTENT | CONST_CS);
 #endif
 
-	php_binary_init();
+	php_binary_init();			//计算PHP执行的二进制程序的路径
 	if (PG(php_binary)) {
 		REGISTER_MAIN_STRINGL_CONSTANT("PHP_BINARY", PG(php_binary), strlen(PG(php_binary)), CONST_PERSISTENT | CONST_CS);
 	} else {
 		REGISTER_MAIN_STRINGL_CONSTANT("PHP_BINARY", "", 0, CONST_PERSISTENT | CONST_CS);
 	}
 
-	php_output_register_constants();
-	php_rfc1867_register_constants();
+	php_output_register_constants();	//初始化输出相关的预定义常量
+	php_rfc1867_register_constants();	//注册文件上传相关的预定义常量
 
 	/* this will read in php.ini, set up the configuration parameters,
 	   load zend extensions and register php function extensions
 	   to be loaded later */
+	//初始化配置信息，同时调用zend_parse_ini_file解析php.ini里面的配置
 	if (php_init_config() == FAILURE) {
 		return FAILURE;
 	}
@@ -2232,17 +2233,21 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	zuv.html_errors = 1;
 	zuv.import_use_extension = ".php";
 	zuv.import_use_extension_length = (uint)strlen(zuv.import_use_extension);
+	//注册_GET/_POST/_COOKIE/_SERVER/_ENV/_REQUEST/_FILES自动的全局变量
 	php_startup_auto_globals();
 	zend_set_utility_values(&zuv);
+	//初始化SAPI对于不同类型内容的处理函数
 	php_startup_sapi_content_types();
 
 	/* startup extensions statically compiled in */
+	//注册内部扩展
 	if (php_register_internal_extensions_func() == FAILURE) {
 		php_printf("Unable to start builtin modules\n");
 		return FAILURE;
 	}
 
 	/* start additional PHP extensions */
+	//启动附加的PHP扩展
 	php_register_extensions_bc(additional_modules, num_additional_modules);
 
 	/* load and startup extensions compiled as shared objects (aka DLLs)
@@ -2252,7 +2257,9 @@ int php_module_startup(sapi_module_struct *sf, zend_module_entry *additional_mod
 	   which is always an internal extension and to be initialized
 	   ahead of all other internals
 	 */
+	//加载所有外部扩展
 	php_ini_register_extensions();
+	//对模块进行排序，并检测是否注册到module_registryhash表里
 	zend_startup_modules();
 
 	/* start Zend extensions */
