@@ -842,7 +842,7 @@ void zend_post_startup(void) /* {{{ */
 
 void zend_shutdown(void) /* {{{ */
 {
-	zend_destroy_rsrc_list(&EG(persistent_list));
+	zend_destroy_rsrc_list(&EG(persistent_list));			//清理持久化的符号表
 	if (EG(active))
 	{
 		/*
@@ -868,18 +868,18 @@ void zend_shutdown(void) /* {{{ */
 		zend_hash_reverse_apply(GLOBAL_FUNCTION_TABLE, (apply_func_t) clean_non_persistent_function_full);
 		zend_hash_reverse_apply(GLOBAL_CLASS_TABLE, (apply_func_t) clean_non_persistent_class_full);
 	}
-	zend_destroy_modules();
+	zend_destroy_modules();									//销毁所有模块
 
 	virtual_cwd_deactivate();
-	virtual_cwd_shutdown();
+	virtual_cwd_shutdown();									//关闭CWD
 
-	zend_hash_destroy(GLOBAL_FUNCTION_TABLE);
+	zend_hash_destroy(GLOBAL_FUNCTION_TABLE);				//销毁全局变量
 	zend_hash_destroy(GLOBAL_CLASS_TABLE);
 
 	zend_hash_destroy(GLOBAL_AUTO_GLOBALS_TABLE);
 	free(GLOBAL_AUTO_GLOBALS_TABLE);
 
-	zend_shutdown_extensions();
+	zend_shutdown_extensions();								//关闭所有扩展
 	free(zend_version_info);
 
 	free(GLOBAL_FUNCTION_TABLE);
@@ -970,10 +970,10 @@ ZEND_API void zend_activate(void) /* {{{ */
 #ifdef ZTS
 	virtual_cwd_activate();
 #endif
-	gc_reset();
-	init_compiler();
-	init_executor();
-	startup_scanner();
+	gc_reset();			//重置垃圾回收
+	init_compiler();	//初始化编译器
+	init_executor();	//初始化执行器
+	startup_scanner();	//初始化扫描器
 }
 /* }}} */
 

@@ -1622,7 +1622,7 @@ int php_request_startup(void)
 		PG(in_error_log) = 0;
 		PG(during_request_startup) = 1;
 
-		php_output_activate();
+		php_output_activate();							//重置输出全局并设置输出处理程序的堆栈
 
 		/* initialize global variables */
 		PG(modules_activated) = 0;
@@ -1630,13 +1630,13 @@ int php_request_startup(void)
 		PG(connection_status) = PHP_CONNECTION_NORMAL;
 		PG(in_user_include) = 0;
 
-		zend_activate();
-		sapi_activate();
+		zend_activate();								//注释在函数里面
+		sapi_activate();								//调用sapi_module里面的active方法
 
-		zend_signal_activate();
+		zend_signal_activate();							//对信号进行处理
 
 		if (PG(max_input_time) == -1) {
-			zend_set_timeout(EG(timeout_seconds), 1);
+			zend_set_timeout(EG(timeout_seconds), 1);	//设置超时时间
 		} else {
 			zend_set_timeout(PG(max_input_time), 1);
 		}
@@ -1665,8 +1665,8 @@ int php_request_startup(void)
 		/* We turn this off in php_execute_script() */
 		/* PG(during_request_startup) = 0; */
 
-		php_hash_environment();
-		zend_activate_modules();
+		php_hash_environment();							//初始化相关全局变量
+		zend_activate_modules();						//调用request_startup_func激活模块
 		PG(modules_activated)=1;
 	} zend_catch {
 		retval = FAILURE;
@@ -1689,8 +1689,8 @@ int php_request_startup(void)
 		return FAILURE;
 	}
 
-	php_output_activate();
-	sapi_activate();
+	php_output_activate();		
+	sapi_activate();			
 	php_hash_environment();
 
 	zend_try {
@@ -1812,12 +1812,12 @@ void php_request_shutdown(void *dummy)
 
 	/* 1. Call all possible shutdown functions registered with register_shutdown_function() */
 	if (PG(modules_activated)) zend_try {
-		php_call_shutdown_functions();
+		php_call_shutdown_functions();					//1.调用所有可能的关闭函数
 	} zend_end_try();
 
 	/* 2. Call all possible __destruct() functions */
 	zend_try {
-		zend_call_destructors();
+		zend_call_destructors();						//调用所有可能的析构函数
 	} zend_end_try();
 
 	/* 3. Flush all output buffers */
@@ -1833,28 +1833,28 @@ void php_request_shutdown(void *dummy)
 		if (!send_buffer) {
 			php_output_discard_all();
 		} else {
-			php_output_end_all();
+			php_output_end_all();						//将所有输出缓冲区内容输出
 		}
 	} zend_end_try();
 
 	/* 4. Reset max_execution_time (no longer executing php code after response sent) */
 	zend_try {
-		zend_unset_timeout();
+		zend_unset_timeout();							//重置最大执行时间
 	} zend_end_try();
 
 	/* 5. Call all extensions RSHUTDOWN functions */
 	if (PG(modules_activated)) {
-		zend_deactivate_modules();
+		zend_deactivate_modules();						//调用所有的扩展的RSHOUDOWN 函数
 	}
 
 	/* 6. Shutdown output layer (send the set HTTP headers, cleanup output handlers, etc.) */
 	zend_try {
-		php_output_deactivate();
+		php_output_deactivate();						//关闭输出层(发送设置HTTP头,清除输出处理程序等)
 	} zend_end_try();
 
 	/* 7. Free shutdown functions */
 	if (PG(modules_activated)) {
-		php_free_shutdown_functions();
+		php_free_shutdown_functions();					//释放所有的shutdown函数
 	}
 
 	/* 8. Destroy super-globals */
@@ -1862,43 +1862,43 @@ void php_request_shutdown(void *dummy)
 		int i;
 
 		for (i=0; i<NUM_TRACK_VARS; i++) {
-			zval_ptr_dtor(&PG(http_globals)[i]);
+			zval_ptr_dtor(&PG(http_globals)[i]);		//销毁所有的super-globals
 		}
 	} zend_end_try();
 
 	/* 9. free request-bound globals */
-	php_free_request_globals();
+	php_free_request_globals();							//释放所有request的全局变量
 
 	/* 10. Shutdown scanner/executor/compiler and restore ini entries */
-	zend_deactivate();
+	zend_deactivate();									//关闭sacnner/executor/compiler并还原ini entries
 
 	/* 11. Call all extensions post-RSHUTDOWN functions */
 	zend_try {
-		zend_post_deactivate_modules();
+		zend_post_deactivate_modules();					//调用所有扩展的post-RSHUTDOWN函数
 	} zend_end_try();
 
-	/* 12. SAPI related shutdown (free stuff) */
+	/* 12. SAPI related shutdown (free stuff) */		
 	zend_try {
-		sapi_deactivate();
+		sapi_deactivate();								//SAPI相关的调用关闭
 	} zend_end_try();
 
 	/* 13. free virtual CWD memory */
-	virtual_cwd_deactivate();
+	virtual_cwd_deactivate();							//释放虚拟CWD内存
 
 	/* 14. Destroy stream hashes */
 	zend_try {
-		php_shutdown_stream_hashes();
+		php_shutdown_stream_hashes();					//关闭stream hash
 	} zend_end_try();
 
 	/* 15. Free Willy (here be crashes) */
-	zend_interned_strings_restore();
+	zend_interned_strings_restore();					//还原内部字符串
 	zend_try {
 		shutdown_memory_manager(CG(unclean_shutdown) || !report_memleaks, 0);
 	} zend_end_try();
 
 	/* 16. Reset max_execution_time */
 	zend_try {
-		zend_unset_timeout();
+		zend_unset_timeout();							//还原最大执行时间
 	} zend_end_try();
 
 #ifdef PHP_WIN32
@@ -2405,21 +2405,21 @@ void php_module_shutdown(void)
 	php_win32_free_rng_lock();
 #endif
 
-	sapi_flush();
+	sapi_flush();					//1.调用module对应的flush函数
 
-	zend_shutdown();
+	zend_shutdown();				//内部注释
 
 	/* Destroys filter & transport registries too */
 	php_shutdown_stream_wrappers(module_number);
 
-	UNREGISTER_INI_ENTRIES();
+	UNREGISTER_INI_ENTRIES();		//销毁ini对应的hashtable
 
 	/* close down the ini config */
-	php_shutdown_config();
+	php_shutdown_config();			//关闭ini config
 
 #ifndef ZTS
-	zend_ini_shutdown();
-	shutdown_memory_manager(CG(unclean_shutdown), 1);
+	zend_ini_shutdown();			//销毁EG(ini_directives)
+	shutdown_memory_manager(CG(unclean_shutdown), 1);//关闭内存管理
 #else
 	zend_ini_global_shutdown();
 #endif
@@ -2429,7 +2429,7 @@ void php_module_shutdown(void)
 	module_initialized = 0;
 
 #ifndef ZTS
-	core_globals_dtor(&core_globals);
+	core_globals_dtor(&core_globals);	//析构垃圾回收
 	gc_globals_dtor();
 #else
 	ts_free_id(core_globals_id);
