@@ -182,7 +182,7 @@ static void sig_handler(int signo) /* {{{ */
 int fpm_signals_init_main() /* {{{ */
 {
 	struct sigaction act;
-
+	//创建管道并设置为非阻塞模式
 	if (0 > socketpair(AF_UNIX, SOCK_STREAM, 0, sp)) {
 		zlog(ZLOG_SYSERROR, "failed to init signals: socketpair()");
 		return -1;
