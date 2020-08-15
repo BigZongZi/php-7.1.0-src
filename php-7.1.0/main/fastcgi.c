@@ -152,7 +152,7 @@ typedef struct _fcgi_begin_request {
 
 typedef struct _fcgi_begin_request_rec {
 	fcgi_header hdr;
-	fcgi_begin_request body;
+	  body;
 } fcgi_begin_request_rec;
 
 typedef struct _fcgi_end_request {
